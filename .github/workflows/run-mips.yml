@@ -20,27 +20,72 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Run MARS
+      - name: Run MIPS tests
         run: |
-          java -jar Mars4_5.jar nc main.asm > output.txt
+          echo "========================================"
+          echo "       MIPS AUTO-GRADER"
+          echo "========================================"
 
-      - name: Check answer
-        run: |
-          OUTPUT=$(tail -n 1 output.txt | tr -d '\r')
-          EXPECTED=$(cat expected.txt | tr -d '\r')
+          total=0
+          passed=0
 
-          echo "Student output:  $OUTPUT"
-          echo "Expected output: $EXPECTED"
+          echo "| Test | A | B | C | Expected | Got | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---:|---:|---:|---:|---:|---:|:---:|" >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "$OUTPUT" = "$EXPECTED" ]; then
-            echo "================================"
-            echo "PASS - Correct answer!"
-            echo "================================"
-          else
-            echo "================================"
-            echo "FAIL - Incorrect answer!"
-            echo "Expected: $EXPECTED"
-            echo "Got:      $OUTPUT"
-            echo "================================"
+          while IFS=',' read -r test_id A B C expected
+          do
+            # Skip CSV header
+            if [ "$test_id" = "test_id" ]; then
+              continue
+            fi
+
+            total=$((total + 1))
+
+            echo ""
+            echo "----------------------------------------"
+            echo "Test $test_id"
+            echo "Input: A=$A B=$B C=$C"
+            echo "Expected: $expected"
+
+            # Send A, B, C to MARS through standard input
+            OUTPUT=$(printf "%s\n%s\n%s\n" "$A" "$B" "$C" \
+              | java -jar Mars4_5.jar nc main.asm \
+              | tail -n 1 \
+              | tr -d '\r')
+
+            echo "Got: $OUTPUT"
+
+            if [ "$OUTPUT" = "$expected" ]; then
+              echo "Result: PASS"
+              passed=$((passed + 1))
+
+              echo "| $test_id | $A | $B | $C | $expected | $OUTPUT | ✅ PASS |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Result: FAIL"
+
+              echo "| $test_id | $A | $B | $C | $expected | $OUTPUT | ❌ FAIL |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+          done < tests.csv
+
+          score=$((passed * 10 / total))
+
+          echo ""
+          echo "========================================"
+          echo "RESULT"
+          echo "========================================"
+          echo "Passed: $passed / $total"
+          echo "Score:  $score / 10"
+          echo "========================================"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Final Score" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**$passed / $total tests passed**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Score: $score / 10" >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail the GitHub Action if not all tests pass
+          if [ "$passed" -ne "$total" ]; then
             exit 1
           fi
