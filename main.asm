@@ -15,7 +15,7 @@
 main:
 
     li $t0, 5
-    li $t1, 8
+    li $t1, 7
 
     add $v0, $t0, $t1
 
