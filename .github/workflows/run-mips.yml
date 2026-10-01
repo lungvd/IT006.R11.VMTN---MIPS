@@ -1,4 +1,4 @@
-name: Run MIPS Program
+name: MIPS Auto-Grader
 
 on:
   push:
@@ -6,10 +6,11 @@ on:
       - main
 
 jobs:
-  run-mips:
+  grade:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -21,4 +22,25 @@ jobs:
 
       - name: Run MARS
         run: |
-          java -jar Mars4_5.jar nc main.asm
+          java -jar Mars4_5.jar nc main.asm > output.txt
+
+      - name: Check answer
+        run: |
+          OUTPUT=$(tail -n 1 output.txt | tr -d '\r')
+          EXPECTED=$(cat expected.txt | tr -d '\r')
+
+          echo "Student output:  $OUTPUT"
+          echo "Expected output: $EXPECTED"
+
+          if [ "$OUTPUT" = "$EXPECTED" ]; then
+            echo "================================"
+            echo "PASS - Correct answer!"
+            echo "================================"
+          else
+            echo "================================"
+            echo "FAIL - Incorrect answer!"
+            echo "Expected: $EXPECTED"
+            echo "Got:      $OUTPUT"
+            echo "================================"
+            exit 1
+          fi
