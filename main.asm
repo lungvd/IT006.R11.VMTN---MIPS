@@ -1,24 +1,29 @@
 # ==================================================
 # IT006.R11.VMTN - MIPS
-# Computer Architecture
+# Auto-Grading Test
 #
-# First MIPS Assembly Program
+# Task:
+# Calculate 5 + 7
+# Expected result: 12
+#
+# The final result must be in $v0
 # ==================================================
-
-.data
-
-message: .asciiz "Hello from MIPS!\n"
 
 .text
 .globl main
 
 main:
 
-    # Print string
-    li $v0, 4
-    la $a0, message
+    li $t0, 5
+    li $t1, 7
+
+    add $v0, $t0, $t1
+
+    # Print result
+    move $a0, $v0
+    li $v0, 1
     syscall
 
-    # Exit program
+    # Exit
     li $v0, 10
     syscall
